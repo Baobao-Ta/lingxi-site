@@ -1,0 +1,1072 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="msvalidate.01" content="1667CFE9751BDAC6780BDC9BD8E1842F" />
+    <title>AI</title>
+
+    <!-- 字体：按项目统一的 Mont Bold（此处用 Montserrat 700 近似） -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet" />
+
+    <style>
+      /* ============================
+         全局基础样式（与 data/monitor/job 保持一致）
+         ============================ */
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        height: 100%;
+      }
+
+      body {
+        font-family: "Montserrat", sans-serif;
+        font-weight: 700;
+        background: #121212;
+        color: rgba(255, 255, 255, 0.9);
+        overflow-x: hidden;
+      }
+
+      /* ============================
+         背景与页面容器
+         ============================ */
+      .dashboard {
+        min-height: 100vh;
+        position: relative;
+        isolation: isolate;
+      }
+
+      /* 说明：为了贴合设计稿的纯深色背景，这里不叠加渐变光晕 */
+      .dashboard::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: none;
+        z-index: 0;
+        pointer-events: none;
+      }
+
+      .dashboard__content {
+        position: relative;
+        z-index: 1;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .page-switch {
+        position: absolute;
+        top: 14px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 6;
+        display: flex;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 999px;
+        background: rgba(18, 18, 18, 0.55);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        backdrop-filter: blur(10px);
+      }
+
+      .page-switch a {
+        text-decoration: none;
+        color: rgba(255, 255, 255, 0.65);
+        font-weight: 900;
+        font-size: 12px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        line-height: 1;
+      }
+
+      .page-switch a.is-active {
+        color: rgba(0, 0, 0, 0.9);
+        background: rgba(163, 230, 53, 0.95);
+        border-color: rgba(163, 230, 53, 0.35);
+      }
+
+      /* ============================
+         顶部栏 Topbar（复用现有页面结构与风格）
+         ============================ */
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 28px;
+        height: 76px;
+        position: relative;
+        z-index: 5;
+      }
+
+      .topbar-left,
+      .topbar-right {
+        background: transparent;
+        backdrop-filter: none;
+        padding: 0;
+        border-radius: 0;
+        border: none;
+      }
+
+      .topbar-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .avatar {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        overflow: hidden;
+        flex-shrink: 0;
+        border: 2px solid rgba(255, 255, 255, 0.10);
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      .avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .operator-info {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .operator-name {
+        font-weight: 900;
+        font-size: 16px;
+        letter-spacing: 0.5px;
+      }
+
+      .operator-subtitle {
+        font-size: 12px;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.55);
+        text-transform: uppercase;
+      }
+
+      .topbar-right {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .sat-link {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 4px;
+        margin-right: 8px;
+      }
+
+      .sat-link span {
+        font-size: 10px;
+        font-weight: 900;
+        color: rgba(255, 255, 255, 0.55);
+        letter-spacing: 1px;
+      }
+
+      .sat-dots {
+        display: flex;
+        gap: 3px;
+      }
+
+      .sat-dot {
+        width: 6px;
+        height: 14px;
+        border-radius: 0px;
+        background: #272727;
+      }
+
+      .sat-dot--active {
+        background: #a3e635;
+      }
+
+      .btn-icon-square {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.18);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        box-shadow: 0 10px 22px rgba(0, 0, 0, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+
+      .btn-icon-square--bell {
+        background-image: url('images/icon-bell.png');
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 32px 32px;
+      }
+
+      .btn-main {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        height: 48px;
+        padding: 0 24px;
+        border-radius: 12px;
+        background: #212715;
+        border: none;
+        color: #a3e635;
+        font-weight: 900;
+        font-size: 16px;
+        cursor: pointer;
+        transition: transform 0.2s;
+        white-space: nowrap;
+      }
+
+      .btn-main:active {
+        transform: scale(0.98);
+      }
+
+      .btn-main-wrap {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+      }
+
+      .btn-main-wrap::after {
+        content: "";
+        position: absolute;
+        top: 3px;
+        bottom: 3px;
+        right: 0;
+        width: 2px;
+        background: rgba(163, 230, 53, 0.95);
+        border-radius: 2px;
+        box-shadow: 0 0 10px rgba(163, 230, 53, 0.35);
+      }
+
+      /* ============================
+         主内容区域：两栏布局（左报告 + 右聊天/辅助面板）
+         ============================ */
+      .main {
+        flex: 1;
+        padding: 18px 20px 22px;
+      }
+
+      .ai-grid {
+        display: grid;
+        grid-template-columns: 1.1fr 0.8fr;
+        gap: 36px;
+        height: calc(100vh - 76px - 18px - 22px);
+        max-height: calc(100vh - 76px - 18px - 22px);
+        padding: 10px;
+      }
+
+      /* 卡片通用样式：与项目深色卡片保持一致 */
+      .card {
+        background: rgba(28, 28, 28, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        border-radius: 34px;
+        box-shadow: 0 18px 36px rgba(0, 0, 0, 0.55);
+        overflow: hidden;
+        position: relative;
+      }
+
+      .report-card.is-offline {
+        opacity: 0.55;
+      }
+
+      .offline-overlay {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        background: rgba(0, 0, 0, 0.35);
+        color: rgba(255, 255, 255, 0.9);
+        font-weight: 900;
+        font-size: 22px;
+        letter-spacing: 1px;
+        pointer-events: none;
+        z-index: 3;
+      }
+
+      /* ============================
+         左侧：报告卡片
+         ============================ */
+      .report-card {
+        padding: 50px;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+      }
+
+      /* 绿色胶囊标签（例如 AI INSPECTION FINAL） */
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 22px;
+        padding: 0 14px;
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        color: rgba(163, 230, 53, 0.95);
+        border: 1px solid rgba(163, 230, 53, 0.95);
+        background: rgba(0, 0, 0, 0.18);
+      }
+
+      .report-title {
+        font-size: 16px;
+        font-weight: 900;
+        letter-spacing: 0.2px;
+        color: rgba(255, 255, 255, 0.92);
+        margin-top: 10px;
+        
+      }
+
+      .report-desc {
+        font-size: 12px;
+        line-height: 1.45;
+        color: rgba(255, 255, 255, 0.55);
+        margin-top: 10px;
+        margin-bottom: 10px;
+      }
+
+      /* 三个小指标卡（Flight Duration / Thermal Score / Integrity Status） */
+      .metric-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        gap: 14px;
+        margin-bottom: 20px;
+      }
+
+      .metric {
+        border-radius: 18px;
+        border: 1px solid #525252;
+        background: rgba(0, 0, 0, 0.16);
+        padding: 14px;
+        min-height: 72px;
+      }
+
+      .metric .k {
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 0.7px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.45);
+        line-height: 24px;
+      }
+
+      .metric .v {
+        margin-top: 10px;
+        font-size: 20px;
+        font-weight: 900;
+        color: rgba(255, 255, 255, 0.92);
+      }
+
+      .metric .hint {
+        margin-top: 6px;
+        font-size: 10px;
+        font-weight: 900;
+        color: #964F56;
+      }
+
+      .metric--accent {
+        border-color:  rgba(163, 230, 53, 0.95);
+      }
+
+      .metric--accent .v {
+        color: rgba(163, 230, 53, 0.95);
+      }
+
+      .metric--accent .hint {
+        color: rgba(163, 230, 53, 0.8);
+      }
+
+      /* 详细分析卡：包含标题/正文/两个进度条 */
+      .analysis {
+        border-radius: 22px;
+        border: 1px solid #525252;
+        background: rgba(0, 0, 0, 0.14);
+        overflow: hidden;
+        margin-top: 0;
+      }
+
+      .analysis__head {
+        padding: 24px 26px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: rgba(255, 255, 255, 0.06);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.10);
+      }
+
+      .analysis__title {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-size: 14px;
+        font-weight: 900;
+        color: rgba(255, 255, 255, 0.85);
+        line-height: 24px;
+      }
+
+      .analysis-ico {
+        width: 18px;
+        height: 18px;
+        object-fit: contain;
+        display: block;
+      }
+
+      /* 左侧绿色小图标（用 CSS 画圆点，后续可替换为图片资源） */
+      .ai-dot {
+        width: 18px;
+        height: 18px;
+        border-radius: 6px;
+        background: rgba(163, 230, 53, 0.18);
+        border: 1px solid rgba(163, 230, 53, 0.35);
+        position: relative;
+      }
+
+      .ai-dot::after {
+        content: "";
+        position: absolute;
+        inset: 5px;
+        border-radius: 50%;
+        background: rgba(163, 230, 53, 0.95);
+      }
+
+      .analysis__confidence {
+        font-size: 12px;
+        font-weight: 900;
+        color: rgba(147, 197, 253, 0.75);
+      }
+
+      .analysis__body {
+        padding: 24px 26px 28px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .analysis__p {
+        font-size: 11px;
+        line-height: 20.8px;
+        color: rgba(255, 255, 255, 0.55);
+      }
+
+      .bar-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+      }
+
+      .bar {
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(0, 0, 0, 0.16);
+        padding: 10px 12px;
+      }
+
+      .bar__head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        font-size: 10px;
+        font-weight: 900;
+        color: rgba(255, 255, 255, 0.55);
+      }
+
+      .bar__line {
+        margin-top: 8px;
+        height: 6px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.06);
+        overflow: hidden;
+      }
+
+      .bar__fill {
+        height: 100%;
+        width: 75%;
+        background: rgba(163, 230, 53, 0.95);
+      }
+
+      .bar__fill--blue {
+        width: 22%;
+        background: rgba(96, 165, 250, 0.95);
+      }
+
+      /* 底部操作按钮（Share / Export） */
+      .report-actions {
+        margin-top: auto;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 24px;
+        padding-top: 10px;
+      }
+
+      .btn-ghost {
+        height: 48px;
+        border-radius: 16px;
+        padding: 0 34px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        background: rgba(0, 0, 0, 0.20);
+        color: rgba(255, 255, 255, 0.75);
+        font-weight: 900;
+        font-size: 14px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      .btn-ico {
+        width: 18px;
+        height: 18px;
+        object-fit: contain;
+        display: block;
+      }
+
+      .btn-ghost .btn-ico {
+        opacity: 0.9;
+      }
+
+      .btn-green {
+        height: 48px;
+        border-radius: 16px;
+        padding: 0 36px;
+        border: none;
+        background: rgba(163, 230, 53, 0.95);
+        color: #000;
+        font-weight: 900;
+        font-size: 14px;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      /* ============================
+         右侧：聊天/辅助面板卡片
+         ============================ */
+      .chat-card {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .chat-messages {
+        flex: 1;
+        padding: 16px;
+        overflow: auto;
+      }
+
+      .chat-console-title {
+        display: flex;
+        justify-content: flex-end;
+        font-size: 22px;
+        font-weight: 900;
+        color: rgba(255, 255, 255, 0.9);
+        padding: 10px 6px 14px;
+      }
+
+      .chat-item {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .chat-item--user {
+        align-items: flex-end;
+      }
+
+      .chat-item--assistant {
+        align-items: flex-start;
+      }
+
+      .chat-assistant-head {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .chat-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: rgba(163, 230, 53, 0.95);
+        display: grid;
+        place-items: center;
+        box-shadow: 0 8px 22px rgba(163, 230, 53, 0.25);
+        overflow: hidden;
+        flex-shrink: 0;
+      }
+
+      .chat-avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .chat-assistant-name {
+        font-size: 18px;
+        font-weight: 900;
+        color: rgba(255, 255, 255, 0.92);
+        letter-spacing: 0.2px;
+      }
+
+      .chat-bubble {
+        max-width: 82%;
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-weight: 900;
+        font-size: 16px;
+        line-height: 1.35;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
+
+      .chat-bubble--user {
+        background: rgba(163, 230, 53, 0.95);
+        color: rgba(0, 0, 0, 0.9);
+        border-radius: 8px;
+        padding: 10px 14px;
+        text-align: center;
+      }
+
+      .chat-bubble--assistant {
+        background: rgba(255, 255, 255, 0.06);
+        color: rgba(255, 255, 255, 0.6);
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        position: relative;
+      }
+
+      .chat-bubble--assistant::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0px;
+        bottom: 0px;
+        width: 4px;
+        border-radius: 4px;
+        background: rgba(163, 230, 53, 0.95);
+      }
+
+      /* 底部聊天工具条区域 */
+      .chat-bottom {
+        padding: 16px;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      /* 三个小按钮（Summary Defects / Export PDF / Optimize Path） */
+      .chat-actions {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-start;
+        margin-left: 0px;
+        padding-left: 0px;
+        align-items: center;
+      }
+
+      /* 三个小按钮（Summary Defects / Export PDF / Optimize Path） */
+
+      .chip {
+        height: 26px;
+        padding: 0 14px;
+        border-radius: 999px;
+        font-size: 10px;
+        font-weight: 900;
+        color: rgba(255, 255, 255, 0.65);
+        background: #343434;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        cursor: pointer;
+      }
+
+      .chat-input {
+        border-radius: 15px;
+        background: #343434;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .chat-input-top {
+        display: flex;
+        align-items: center;
+      }
+
+      .chat-input-divider {
+        height: 1px;
+        background: rgba(255, 255, 255, 0.22);
+        opacity: 0.85;
+      }
+
+      .chat-input-bottom {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      .chat-input input {
+        flex: 1;
+        height: 38px;
+        border: none;
+        background: transparent;
+        outline: none;
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 12px;
+      }
+
+      .chat-input input::placeholder {
+        color: rgba(255, 255, 255, 0.397);
+      }
+
+      .chat-icons {
+        display: flex;
+        gap: 10px;
+      }
+
+      .icon-btn {
+        width: 34px;
+        height: 34px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        display: grid;
+        place-items: center;
+        cursor: pointer;
+        color: rgba(255, 255, 255, 0.65);
+        font-weight: 900;
+        font-size: 12px;
+      }
+
+      .icon-btn img {
+        width: 18px;
+        height: 18px;
+        object-fit: contain;
+        display: block;
+      }
+
+      .send-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        border: none;
+        background: rgba(163, 230, 53, 0.95);
+        color: #000;
+        font-weight: 900;
+        cursor: pointer;
+        display: grid;
+        place-items: center;
+      }
+
+      /* ============================
+         响应式：窄屏折叠为单列
+         ============================ */
+      @media (max-width: 1100px) {
+        .ai-grid {
+          grid-template-columns: 1fr;
+          height: auto;
+          max-height: none;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .topbar {
+          padding: 14px 16px;
+          height: 68px;
+        }
+
+        .main {
+          padding: 14px;
+        }
+
+        .operator-subtitle {
+          display: none;
+        }
+
+        .metric-row {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="dashboard">
+      <div class="dashboard__content">
+        <nav class="page-switch" aria-label="Page switch">
+          <a href="monitor.html" data-page="monitor.html">Monitor</a>
+          <a href="job.html" data-page="job.html">Job</a>
+          <a href="data.html" data-page="data.html">Data</a>
+          <a href="ai.html" data-page="ai.html">AI</a>
+        </nav>
+        <!-- ============================
+             顶部栏：复用项目统一 Topbar
+             ============================ -->
+        <header class="topbar">
+          <div class="topbar-left">
+            <div class="avatar">
+              <img src="images/top-avatar.png" alt="Operator Avatar" />
+            </div>
+
+            <div class="operator-info">
+              <div class="operator-name">OPERATOR 01</div>
+              <div class="operator-subtitle">灵犀 AIR PLANCE</div>
+            </div>
+          </div>
+
+          <div class="topbar-right">
+            <div class="sat-link">
+              <span>GPS SAT-LINK</span>
+              <div class="sat-dots">
+                <div class="sat-dot sat-dot--active"></div>
+                <div class="sat-dot sat-dot--active"></div>
+                <div class="sat-dot sat-dot--active"></div>
+                <div class="sat-dot"></div>
+              </div>
+            </div>
+
+            <div class="btn-icon-square btn-icon-square--bell" aria-label="Notification"></div>
+
+            <div class="btn-main-wrap">
+              <button class="btn-main" type="button">
+                <span>灵犀AI</span>
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <!-- ============================
+             主体内容：两栏布局
+             左：AI 报告总结
+             右：AI 助手输入框/操作区
+             ============================ -->
+        <main class="main">
+          <section class="ai-grid">
+            <!-- 左侧：AI 报告卡片（按设计稿排版） -->
+            <section class="card report-card" aria-label="AI report">
+              <div>
+                <span class="pill">AI INSPECTION FINAL</span>
+              </div>
+
+              <div class="report-title">Factory inspection : Final Report Summary</div>
+              <div class="report-desc">
+                This report focuses on the operation of the Lingxi system in factory inspections. Based on the system's
+                operational data, on-site application records, and practical feedback during the statistical period, it
+                provides a comprehensive analysis of the performance of the navigation module, existing issues, and
+                directions for optimization.
+              </div>
+
+              <!-- 三个指标卡：按设计稿为一行 3 列 -->
+              <div class="metric-row" aria-label="Key metrics">
+                <div class="metric">
+                  <div class="k">Flight Duration</div>
+                  <div class="v">1min13s</div>
+                  <div class="hint">▲ Criteria</div>
+                </div>
+                <div class="metric metric--accent">
+                  <div class="k">Thermal Score</div>
+                  <div class="v">100 %</div>
+                  <div class="hint">✓ Accurate</div>
+                </div>
+                <div class="metric">
+                  <div class="k">Integrity Status</div>
+                  <div class="v">A +</div>
+                  <div class="hint">Sector Certified</div>
+                </div>
+              </div>
+
+              <!-- 详细分析区域（按设计稿：标题行 + 文本 + 两个进度条） -->
+              <section class="analysis" aria-label="Detailed AI analysis">
+                <div class="analysis__head">
+                  <div class="analysis__title">
+                    <img class="analysis-ico" src="images/Detail_analysis.png" alt="" aria-hidden="true" />
+                    <span>Detailed AI Analysis</span>
+                  </div>
+                  <div class="analysis__confidence">Confidence : 99.8 %</div>
+                </div>
+
+                <div class="analysis__body">
+                  <div class="analysis__p">
+                    The navigation operation statistics period for this time is from January 1, 2026, to January 31, 2026.
+                    Relying on the Lingxi system, the inspection work was completed for one patrol area in the entire
+                    factory, covering various complex scenarios such as dark, humid, high-risk, and confined spaces.
+                  </div>
+                  <div class="analysis__p">
+                    During operation, the Lingxi system ran smoothly overall, with inspection efficiency increased by 42%,
+                    the point check omission rate reduced to 0%, and the average positioning deviation maintained at 2.4 cm.
+                  </div>
+
+                  <div class="bar-row" aria-label="Progress bars">
+                    <div class="bar">
+                      <div class="bar__head">
+                        <span>Be Downloading</span>
+                        <span style="color: rgba(163, 230, 53, 0.95)">75 %</span>
+                      </div>
+                      <div class="bar__line"><div class="bar__fill"></div></div>
+                    </div>
+                    <div class="bar">
+                      <div class="bar__head">
+                        <span>Corrosion Rise</span>
+                        <span style="color: rgba(96, 165, 250, 0.95)">22 %</span>
+                      </div>
+                      <div class="bar__line"><div class="bar__fill bar__fill--blue"></div></div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <!-- 底部按钮：Share / Export -->
+              <div class="report-actions" aria-label="Report actions">
+                <button class="btn-ghost" type="button">
+                  <img class="btn-ico" src="images/share.png" alt="" aria-hidden="true" />
+                  <span>Share</span>
+                </button>
+                <button class="btn-green" type="button">
+                  <img class="btn-ico" src="images/export.png" alt="" aria-hidden="true" />
+                  <span>Export</span>
+                </button>
+              </div>
+            </section>
+
+            <!-- 右侧：聊天/辅助面板（按设计稿：主体留白 + 底部输入工具条） -->
+            <aside class="card chat-card" aria-label="AI assistant panel">
+              <div class="chat-messages" id="chatMessages" aria-label="Chat messages">
+                <div class="chat-console-title">Operator Console</div>
+              </div>
+
+              <div class="chat-bottom">
+                <div class="chat-actions" aria-label="Quick actions">
+                  <button class="chip" type="button">Summar Defects</button>
+                  <div class="chip-divider"></div>
+                  <button class="chip" type="button">Export PDF</button>
+                  <div class="chip-divider"></div>
+                  <button class="chip" type="button">Optimize Path</button>
+                </div>
+
+                <div class="chat-input" aria-label="Chat input">
+                  <div class="chat-input-top">
+                    <input id="chatInput" type="text" placeholder="Ask DeepSeek Assistant ..." />
+                  </div>
+
+                  <div class="chat-input-divider" aria-hidden="true"></div>
+
+                  <div class="chat-input-bottom">
+                    <div class="chat-icons">
+                      <button class="icon-btn" type="button" aria-label="Attach">
+                        <img src="images/link.png" alt="" aria-hidden="true" />
+                      </button>
+                      <button class="icon-btn" type="button" aria-label="Picture">
+                        <img src="images/picture.png" alt="" aria-hidden="true" />
+                      </button>
+                    </div>
+
+                    <button class="send-btn" id="chatSend" type="button" aria-label="Send">▲</button>
+                  </div>
+                </div>
+              </div>
+            </aside>
+          </section>
+        </main>
+      </div>
+    </div>
+
+  <script>
+    const DRONE_CONNECTED = false;
+
+    const current = (location.pathname.split("/").pop() || "ai.html").toLowerCase();
+    document.querySelectorAll(".page-switch a").forEach((a) => {
+      const p = String(a.getAttribute("data-page") || "").toLowerCase();
+      if (p === current) a.classList.add("is-active");
+    });
+
+    const chatMessagesEl = document.getElementById("chatMessages");
+    const chatInputEl = document.getElementById("chatInput");
+    const chatSendEl = document.getElementById("chatSend");
+
+    (function applyDisconnectedHeader() {
+      if (DRONE_CONNECTED) return;
+      const satText = document.querySelector(".sat-link span");
+      if (satText) satText.textContent = "DRONE DISCONNECTED";
+      document.querySelectorAll(".sat-dot").forEach((d) => d.classList.remove("sat-dot--active"));
+    })();
+
+    if (!DRONE_CONNECTED) {
+      try {
+        document
+          .querySelectorAll(".chat-actions .chip, .chat-actions button, .icon-btn")
+          .forEach((btn) => {
+            btn.disabled = true;
+            btn.style.opacity = "0.55";
+            btn.style.cursor = "not-allowed";
+          });
+      } catch (e) {}
+
+      chatInputEl.disabled = true;
+      chatInputEl.placeholder = "Drone disconnected";
+      chatSendEl.disabled = true;
+      chatSendEl.style.opacity = "0.55";
+      chatSendEl.style.cursor = "not-allowed";
+
+      const notice = document.createElement("div");
+      notice.className = "chat-item chat-item--assistant";
+      const head = document.createElement("div");
+      head.className = "chat-assistant-head";
+      const avatar = document.createElement("div");
+      avatar.className = "chat-avatar";
+      const avatarImg = document.createElement("img");
+      avatarImg.src = "images/ai.png";
+      avatarImg.alt = "";
+      avatarImg.setAttribute("aria-hidden", "true");
+      avatar.appendChild(avatarImg);
+      const name = document.createElement("div");
+      name.className = "chat-assistant-name";
+      name.textContent = "灵犀 AI";
+      head.appendChild(avatar);
+      head.appendChild(name);
+
+      const bubble = document.createElement("div");
+      bubble.className = "chat-bubble chat-bubble--assistant";
+      bubble.textContent = "无人机未连接，无法进行对话与任务分析。";
+      notice.appendChild(head);
+      notice.appendChild(bubble);
+      chatMessagesEl.appendChild(notice);
+
+      const reportCard = document.querySelector(".report-card");
+      if (reportCard) {
+        reportCard.classList.add("is-offline");
+        const overlay = document.createElement("div");
+        overlay.className = "offline-overlay";
+        overlay.textContent = "未运行";
+        reportCard.appendChild(overlay);
+
+        reportCard.querySelectorAll(".metric .v, .analysis__confidence").forEach((el) => {
+          el.textContent = "--";
+        });
+      }
+    }
+  </script>
+</body>
+</html>

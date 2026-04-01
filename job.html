@@ -1,0 +1,1124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="msvalidate.01" content="1667CFE9751BDAC6780BDC9BD8E1842F" />
+    <title>Job Manage</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
+    <style>
+      /* ============================
+         全局基础样式（与现有页面风格保持一致）
+         ============================ */
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html,
+      body {
+        height: 100%;
+      }
+
+      body {
+        font-family: "Montserrat", sans-serif;
+        font-weight: 700;
+        background: #121212;
+        color: rgba(255, 255, 255, 0.9);
+        overflow-x: hidden;
+      }
+
+      /* 背景层：暗色渐变 + 轻微暗角（接近设计稿氛围） */
+      .dashboard {
+        min-height: 100vh;
+        position: relative;
+        isolation: isolate;
+      }
+
+      .dashboard::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: none;
+        z-index: 0;
+        pointer-events: none;
+      }
+
+      .dashboard__content {
+        position: relative;
+        z-index: 1;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .page-switch {
+        position: absolute;
+        top: 14px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 6;
+        display: flex;
+        gap: 10px;
+        padding: 8px 10px;
+        border-radius: 999px;
+        background: rgba(18, 18, 18, 0.55);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        backdrop-filter: blur(10px);
+      }
+
+      .page-switch a {
+        text-decoration: none;
+        color: rgba(255, 255, 255, 0.65);
+        font-weight: 900;
+        font-size: 12px;
+        padding: 8px 12px;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        line-height: 1;
+      }
+
+      .page-switch a.is-active {
+        color: rgba(0, 0, 0, 0.9);
+        background: rgba(163, 230, 53, 0.95);
+        border-color: rgba(163, 230, 53, 0.35);
+      }
+
+      /* ============================
+         顶部栏 Topbar（复用 data/monitor 页面导航栏）
+         ============================ */
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 28px;
+        height: 76px;
+        position: relative;
+        z-index: 5;
+      }
+
+      /* 顶部导航栏左右区域 */
+      .topbar-left,
+      .topbar-right {
+        background: transparent;
+        backdrop-filter: none;
+        padding: 0;
+        border-radius: 0;
+        border: none;
+      }
+
+      .topbar-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      /* 左上头像 */
+      .avatar {
+        width: 46px;
+        height: 46px;
+        border-radius: 50%;
+        overflow: hidden;
+        flex-shrink: 0;
+        border: 2px solid rgba(255, 255, 255, 0.10);
+        background: rgba(255, 255, 255, 0.06);
+      }
+
+      .avatar img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      /* 操作员信息 */
+      .operator-info {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .operator-name {
+        font-weight: 900;
+        font-size: 16px;
+        letter-spacing: 0.5px;
+      }
+
+      .operator-subtitle {
+        font-size: 12px;
+        font-weight: 700;
+        color: rgba(255, 255, 255, 0.55);
+        text-transform: uppercase;
+      }
+
+      .topbar-right {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      /* GPS 卫星链接状态 */
+      .sat-link {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 4px;
+        margin-right: 8px;
+      }
+
+      /* 卫星链接文本 */
+      .sat-link span {
+        font-size: 10px;
+        font-weight: 900;
+        color: rgba(255, 255, 255, 0.55);
+        letter-spacing: 1px;
+      }
+
+      .sat-dots {
+        display: flex;
+        gap: 3px;
+      }
+
+      .sat-dot {
+        width: 6px;
+        height: 14px;
+        border-radius: 0px;
+        background: #272727;
+      }
+
+      .sat-dot--active {
+        background: #a3e635;
+      }
+
+      /* 图标按钮基础样式 */
+      .btn-icon-square {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.18);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        box-shadow: 0 10px 22px rgba(0, 0, 0, 0.35);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+      }
+
+      /* 通知铃铛按钮 */
+      .btn-icon-square--bell {
+        background-image: url('images/icon-bell.png');
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 32px 32px;
+      }
+
+      /* 主按钮样式 */
+      .btn-main {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        height: 48px;
+        padding: 0 24px;
+        border-radius: 12px;
+        background: #212715;
+        border: none;
+        color: #a3e635;
+        font-weight: 900;
+        font-size: 16px;
+        cursor: pointer;
+        transition: transform 0.2s;
+      }
+
+      /* 主按钮包装器 */
+      .btn-main-wrap {
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+      }
+
+      /* 主按钮右侧装饰线 */
+      .btn-main-wrap::after {
+        content: "";
+        position: absolute;
+        top: 3px;
+        bottom: 3px;
+        right: 0;
+        width: 2px;
+        background: rgba(163, 230, 53, 0.95);
+        border-radius: 2px;
+        box-shadow: 0 0 10px rgba(163, 230, 53, 0.35);
+      }
+
+      /* 主按钮图标 */
+      .btn-main-icon {
+        width: 32px;
+        height: 32px;
+      }
+
+      /* ============================
+         主内容区域布局
+         ============================ */
+      .main {
+        flex: 1;
+        padding: 18px 20px 22px;
+      }
+
+      /* 3列布局：左 Configuration，中 Pending Queue，右 Stats/Fleet */
+      .job-grid {
+        display: grid;
+        grid-template-columns: 420px 1fr 340px;
+        gap: 16px;
+        height: calc(100vh - 76px - 18px - 22px);
+        max-height: calc(100vh - 76px - 18px - 22px);
+      }
+
+      /* 卡片基础样式（与 data.html 的深色卡片一致） */
+      .card {
+        background: rgba(28, 28, 28, 0.85);
+        border: 1px solid rgba(82, 82, 82, 0.6);
+        border-radius: 28px;
+        backdrop-filter: blur(12px);
+        overflow: hidden;
+      }
+
+      /* 左列：配置卡片 */
+      .config-card {
+        display: flex;
+        flex-direction: column;
+        padding: 16px;
+        gap: 14px;
+      }
+
+      .card-title {
+        display: inline-flex;
+        align-items: center;
+        gap: 14px;
+        font-size: 14px;
+        font-weight: 900;
+        letter-spacing: 0.6px;
+        color: rgba(255, 255, 255, 0.7);
+        text-transform: uppercase;
+      }
+
+      .card-title .title-ico {
+        width: 22px;
+        height: 22px;
+        display: inline-block;
+        object-fit: contain;
+      }
+
+      /* 表单字段（只做 UI 还原：无真实业务逻辑） */
+      .field {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .field label {
+        font-size: 12px;
+        font-weight: 900;
+        color: rgba(255, 255, 255, 0.45);
+        letter-spacing: 0.8px;
+        text-transform: uppercase;
+      }
+
+      .field input {
+        height: 42px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: rgba(0, 0, 0, 0.18);
+        color: rgba(255, 255, 255, 0.9);
+        padding: 0 12px;
+        outline: none;
+      }
+
+      .map-label {
+        font-size: 12px;
+        font-weight: 900;
+        color: rgba(255, 255, 255, 0.55);
+        letter-spacing: 0.4px;
+      }
+
+      .mini-map {
+        position: relative;
+        height: 250px;
+        border-radius: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        overflow: hidden;
+        background: rgba(0, 0, 0, 0.2);
+      }
+
+      .mini-map img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        filter: saturate(1.05) contrast(1.05);
+      }
+
+      /* 地图中部透明输入框（用于还原设计稿的叠层输入框效果） */
+      .map-overlay-input {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        width: calc(100% - 56px);
+        height: 42px;
+        padding: 0 14px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        background: rgba(0, 0, 0, 0.18);
+        color: rgba(255, 255, 255, 0.9);
+        outline: none;
+        backdrop-filter: blur(10px);
+      }
+
+      /* 左侧配置区：按设计稿拉开各模块垂直间距 */
+      .mission-field {
+        margin-top: 28px;
+      }
+
+      .objective-field {
+        margin-top: 16px;
+      }
+
+      .destination-field {
+        margin-top: 28px;
+      }
+
+      /* 底部两个小输入框 */
+      .two-cols {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 16px;
+        margin-bottom: 24px;
+      }
+
+      /* Launch Mission 按钮（绿色大按钮） */
+      .launch {
+        margin-top: auto;
+        height: 64px;
+        border-radius: 18px;
+        background: rgba(163, 230, 53, 0.95);
+        border: none;
+        color: #000;
+        font-weight: 900;
+        font-size: 22px;
+        letter-spacing: 0.6px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
+        cursor: pointer;
+      }
+
+      .launch img {
+        width: 46px;
+        height: 46px;
+        object-fit: contain;
+        display: block;
+        margin-top: 32px;
+      }
+
+      /* 中列：Pending Queue */
+      .queue-card {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .queue-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .queue-title {
+        display: inline-flex;
+        align-items: center;
+        gap: 14px;
+        font-weight: 900;
+        font-size: 14px;
+        letter-spacing: 0.6px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.8);
+      }
+
+      .queue-title .title-ico {
+        width: 22px;
+        height: 22px;
+        display: inline-block;
+        object-fit: contain;
+      }
+
+      .sync-chip {
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 0.8px;
+        color: rgba(255, 255, 255, 0.55);
+        text-transform: uppercase;
+        background: #1A2318;
+        border: 0px solid rgba(255, 255, 255, 0.10);
+        padding: 8px 12px;
+        border-radius: 999px;
+      }
+
+      .queue-body {
+        flex: 1;
+        border-radius: 20px;
+        background: #1C1C1C;
+        border: 0px solid rgba(255, 255, 255, 0.08);
+        padding: 18px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+
+      .queue-item {
+        border-radius: 16px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid #778292;
+        padding: 18px;
+        min-height: 128px;
+        box-shadow: 0 10px 18px rgba(0, 0, 0, 0.25);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .queue-item__top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+      }
+
+      .queue-item__left {
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        min-width: 0;
+      }
+
+      .queue-item__ico {
+        width: 34px;
+        height: 34px;
+        border-radius: 10px;
+        background: rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        display: grid;
+        place-items: center;
+        flex-shrink: 0;
+      }
+
+      .queue-item__ico::before {
+        content: "";
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.55);
+        box-sizing: border-box;
+        display: block;
+        position: relative;
+      }
+
+      .queue-item__ico::after {
+        content: "";
+        width: 6px;
+        height: 2px;
+        background: rgba(255, 255, 255, 0.55);
+        border-radius: 2px;
+        position: absolute;
+        transform: translateY(-1px);
+      }
+
+      .queue-item__meta {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        min-width: 0;
+      }
+
+      .queue-item__title {
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0.4px;
+        color: rgba(255, 255, 255, 0.9);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .queue-item__sub {
+        font-size: 10px;
+        font-weight: 800;
+        color: rgba(255, 255, 255, 0.55);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .queue-item__status {
+        flex-shrink: 0;
+        height: 20px;
+        padding: 0 10px;
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        background: rgba(0, 0, 0, 0.22);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 0.6px;
+        color: rgba(255, 255, 255, 0.75);
+        text-transform: uppercase;
+      }
+
+      .queue-item__status.is-running {
+        border-color: rgba(163, 230, 53, 0.35);
+        color: rgba(163, 230, 53, 0.95);
+      }
+
+      .queue-item__actions {
+        margin-top: auto;
+        padding-top: 16px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .queue-btn {
+        height: 32px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        background: rgba(0, 0, 0, 0.18);
+        color: rgba(255, 255, 255, 0.9);
+        font-weight: 900;
+        font-size: 14px;
+        cursor: pointer;
+      }
+
+      .queue-btn--danger {
+        background: rgba(239, 68, 68, 0.85);
+        border-color: rgba(239, 68, 68, 0.85);
+        color: #fff;
+      }
+
+      /* 右列：Stats + Fleet */
+      .right-col {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        height: 100%;
+      }
+
+      .stats-card {
+        flex: 0.35;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .stats-grid {
+        margin-top: 36px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px 18px;
+        justify-content: center;
+        align-items: center;
+        max-width: 800px;
+        margin-left: 20px;
+        width: 100%;
+      }
+
+      .stat {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .stat .v {
+        font-size: 22px;
+        font-weight: 900;
+        letter-spacing: 0.4px;
+      }
+
+      .stat .k {
+        font-size: 10px;
+        font-weight: 900;
+        letter-spacing: 0.7px;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.45);
+      }
+
+      .stat.v-green .v {
+        color: rgba(163, 230, 53, 0.95);
+      }
+
+      .stat.v-blue .v {
+        color: rgba(96, 165, 250, 0.95);
+      }
+
+      .stat.v-orange .v {
+        color: rgba(251, 146, 60, 0.95);
+      }
+
+      .stat.v-purple .v {
+        color: rgba(216, 180, 254, 0.95);
+      }
+
+      .fleet-card {
+        flex: 0.7;
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .fleet-list {
+        margin-top: 16px;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .unit {
+        padding: 12px;
+        border-radius: 16px;
+        background: #222224;
+        border: 0px solid rgba(255, 255, 255, 0.08);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .unit-left {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+
+      .unit-ico {
+        width: 40px;
+        height: 40px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.04);
+        display: grid;
+        place-items: center;
+      }
+
+      .unit-ico img {
+        width: 42px;
+        height: 42px;
+        object-fit: contain;
+        display: block;
+      }
+
+      .unit-name {
+        font-weight: 900;
+        font-size: 12px;
+      }
+
+      .unit-state {
+        font-size: 10px;
+        font-weight: 900;
+        color: rgba(255, 255, 255, 0.45);
+      }
+
+      .unit-state.is-active {
+        color: rgba(163, 230, 53, 0.9);
+      }
+
+      .unit-state.is-maint {
+        color: rgba(251, 146, 60, 0.9);
+      }
+
+      .unit-right {
+        width: 36px;
+        height: 2px;
+        border-radius: 2px;
+        background: rgba(255, 255, 255, 0.18);
+      }
+
+      .unit-right.is-green {
+        background: rgba(163, 230, 53, 0.9);
+      }
+
+      .unit-right.is-orange {
+        background: rgba(251, 146, 60, 0.9);
+      }
+
+      /* ============================
+         响应式：窄屏改为单列
+         ============================ */
+      @media (max-width: 1100px) {
+        .job-grid {
+          grid-template-columns: 1fr;
+          height: auto;
+          max-height: none;
+        }
+
+        .right-col {
+          height: auto;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .topbar {
+          padding: 14px 16px;
+          height: 68px;
+        }
+
+        .main {
+          padding: 14px;
+        }
+
+        .btn-main {
+          padding: 0 14px;
+        }
+
+        .operator-subtitle {
+          display: none;
+        }
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="dashboard">
+      <div class="dashboard__content">
+        <nav class="page-switch" aria-label="Page switch">
+          <a href="monitor.html" data-page="monitor.html">Monitor</a>
+          <a href="job.html" data-page="job.html">Job</a>
+          <a href="data.html" data-page="data.html">Data</a>
+          <a href="ai.html" data-page="ai.html">AI</a>
+        </nav>
+        <!-- ============================
+             顶部栏：操作员信息 + 右上状态/按钮
+             ============================ -->
+        <header class="topbar">
+          <div class="topbar-left">
+            <div class="avatar">
+              <img src="images/top-avatar.png" alt="Operator Avatar" />
+            </div>
+
+            <div class="operator-info">
+              <div class="operator-name">OPERATOR 01</div>
+              <div class="operator-subtitle">灵犀 AIR PLANCE</div>
+            </div>
+          </div>
+
+          <div class="topbar-right">
+            <div class="sat-link">
+              <span>GPS SAT-LINK</span>
+              <div class="sat-dots">
+                <div class="sat-dot sat-dot--active"></div>
+                <div class="sat-dot sat-dot--active"></div>
+                <div class="sat-dot sat-dot--active"></div>
+                <div class="sat-dot"></div>
+              </div>
+            </div>
+
+            <div class="btn-icon-square btn-icon-square--bell" aria-label="Notification"></div>
+
+            <div class="btn-main-wrap">
+              <button class="btn-main" type="button">
+                <img class="btn-main-icon" src="images/icon-main-function.png" alt="" aria-hidden="true" />
+                <span>Job manage</span>
+              </button>
+            </div>
+          </div>
+        </header>
+
+        <!-- ============================
+             主体区域：三列卡片布局
+             ============================ -->
+        <main class="main">
+          <section class="job-grid">
+            <!-- 左侧：Configuration 配置卡片 -->
+            <section class="card config-card">
+              <div class="card-title">
+                <img class="title-ico" src="images/CONFIGURATION.png" alt="" aria-hidden="true" />
+                <span>CONFIGURATION</span>
+              </div>
+
+              <!-- 任务名称输入框 -->
+              <div class="field mission-field">
+                <label for="mission">MISSION NAME</label>
+                <input id="mission" type="text" placeholder="" />
+              </div>
+
+              <!-- 目标输入框 -->
+              <div class="field objective-field">
+                <label for="objective">OBJECTIVE</label>
+                <input id="objective" type="text" placeholder="" />
+              </div>
+
+              <!-- 目的地坐标（地图预览） -->
+              <div class="field destination-field">
+                <div class="map-label">Destination Coordinates</div>
+                <!-- 地图图片需要从 Figma 导出；如果你想用现有资源，可临时改成 images/map.png -->
+                <div class="mini-map">
+                  <img src="images/Destination.png" alt="" />
+                  <input class="map-overlay-input" type="text" aria-label="Destination input" />
+                </div>
+              </div>
+
+              <!-- 飞行时间 / 序列号 -->
+              <div class="two-cols">
+                <div class="field">
+                  <label for="flightSpeed">Flight Speed</label>
+                  <input id="flightSpeed" type="text" placeholder="" />
+                </div>
+                <div class="field">
+                  <label for="serial">Serial number</label>
+                  <input id="serial" type="text" placeholder="" />
+                </div>
+              </div>
+
+              <!-- Launch Mission 大按钮 -->
+              <button class="launch" type="button">
+                <!-- 图标需要从 Figma 导出（暂留空/占位） -->
+                <img src="images/Launch Misson.png" alt="" aria-hidden="true" />
+                <span>Launch Misson</span>
+              </button>
+            </section>
+
+            <!-- 中间：Pending Queue 卡片 -->
+            <section class="card queue-card">
+              <div class="queue-head">
+                <div class="queue-title">
+                  <img class="title-ico" src="images/PENDING QUEUE.png" alt="" aria-hidden="true" />
+                  <span>PENDING QUEUE</span>
+                </div>
+                <div class="sync-chip">LIVE SYMC : 14 : 20 : 11</div>
+              </div>
+
+              <!-- 队列主体区域：设计稿为大面积留白（这里用一个占位容器） -->
+              <div class="queue-body" aria-label="Pending queue list"></div>
+            </section>
+
+            <!-- 右侧：Stats + Fleet（上下两张卡片） -->
+            <aside class="right-col">
+              <section class="card stats-card">
+                <div class="card-title">
+                  <img class="title-ico" src="images/star.png" alt="" aria-hidden="true" />
+                  <span>STATS</span>
+                </div>
+                <div class="stats-grid">
+                  <div class="stat v-green">
+                    <div class="v">24</div>
+                    <div class="k">COMPLETCO</div>
+                  </div>
+                  <div class="stat v-blue">
+                    <div class="v">98.2</div>
+                    <div class="k">PRECISION</div>
+                  </div>
+                  <div class="stat v-orange">
+                    <div class="v">0</div>
+                    <div class="k">Deviation</div>
+                  </div>
+                  <div class="stat v-purple">
+                    <div class="v">14.2</div>
+                    <div class="k">FLIGHT (H)</div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="card fleet-card">
+                <div class="card-title">
+                  <img class="title-ico" src="images/FLEET.png" alt="" aria-hidden="true" />
+                  <span>FLEET</span>
+                </div>
+
+                <div class="fleet-list">
+                  <!-- Unit 1 -->
+                  <div class="unit">
+                    <div class="unit-left">
+                      <div class="unit-ico"><img src="images/Alpha.png" alt="" aria-hidden="true" /></div>
+                      <div>
+                        <div class="unit-name">Unit - Alpha</div>
+                        <div class="unit-state is-active">Actice</div>
+                      </div>
+                    </div>
+                    <div class="unit-right is-green" aria-hidden="true"></div>
+                  </div>
+
+                  <!-- Unit 2 -->
+                  <div class="unit">
+                    <div class="unit-left">
+                      <div class="unit-ico"><img src="images/Beta.png" alt="" aria-hidden="true" /></div>
+                      <div>
+                        <div class="unit-name">Unit - Beta</div>
+                        <div class="unit-state">Charging</div>
+                      </div>
+                    </div>
+                    <div class="unit-right" aria-hidden="true"></div>
+                  </div>
+
+                  <!-- Unit 3 -->
+                  <div class="unit">
+                    <div class="unit-left">
+                      <div class="unit-ico"><img src="images/Gamma.png" alt="" aria-hidden="true" /></div>
+                      <div>
+                        <div class="unit-name">Unit - Gamma</div>
+                        <div class="unit-state is-maint">Maintcnance</div>
+                      </div>
+                    </div>
+                    <div class="unit-right is-orange" aria-hidden="true"></div>
+                  </div>
+                </div>
+              </section>
+            </aside>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        var DRONE_CONNECTED = false;
+
+        var current = (location.pathname.split("/").pop() || "job.html").toLowerCase();
+        document.querySelectorAll(".page-switch a").forEach(function (a) {
+          var p = String(a.getAttribute("data-page") || "").toLowerCase();
+          if (p === current) a.classList.add("is-active");
+        });
+
+        function applyDisconnectedUI() {
+          var satText = document.querySelector(".sat-link span");
+          if (satText) satText.textContent = "DRONE DISCONNECTED";
+
+          document.querySelectorAll(".sat-dot").forEach(function (d) {
+            d.classList.remove("sat-dot--active");
+          });
+
+          document.querySelectorAll("input, textarea, select").forEach(function (el) {
+            el.disabled = true;
+          });
+
+          var launchBtn = document.querySelector(".launch");
+          if (launchBtn) {
+            launchBtn.disabled = true;
+            launchBtn.style.opacity = "0.55";
+            launchBtn.style.cursor = "not-allowed";
+          }
+
+          var queueBody = document.querySelector(".queue-body");
+          if (queueBody) queueBody.innerHTML = "";
+        }
+
+        var taskSeq = 0;
+
+        function pad2(n) {
+          return String(n).padStart(2, "0");
+        }
+
+        function getVal(selector) {
+          var el = document.querySelector(selector);
+          return el ? String(el.value || "").trim() : "";
+        }
+
+        function createTaskCard(payload) {
+          var item = document.createElement("div");
+          item.className = "queue-item";
+
+          var status = document.createElement("div");
+          status.className = "queue-item__status";
+          status.textContent = "Pending";
+
+          var title = document.createElement("div");
+          title.className = "queue-item__title";
+          title.textContent = payload.title;
+
+          var sub = document.createElement("div");
+          sub.className = "queue-item__sub";
+          sub.textContent = "Destination : " + payload.destination;
+
+          var leftMeta = document.createElement("div");
+          leftMeta.className = "queue-item__meta";
+          leftMeta.appendChild(title);
+          leftMeta.appendChild(sub);
+
+          var ico = document.createElement("div");
+          ico.className = "queue-item__ico";
+
+          var left = document.createElement("div");
+          left.className = "queue-item__left";
+          left.appendChild(ico);
+          left.appendChild(leftMeta);
+
+          var top = document.createElement("div");
+          top.className = "queue-item__top";
+          top.appendChild(left);
+          top.appendChild(status);
+
+          var btnStart = document.createElement("button");
+          btnStart.type = "button";
+          btnStart.className = "queue-btn";
+          btnStart.textContent = "Start";
+
+          var btnDelete = document.createElement("button");
+          btnDelete.type = "button";
+          btnDelete.className = "queue-btn queue-btn--danger";
+          btnDelete.textContent = "Delete";
+
+          var actions = document.createElement("div");
+          actions.className = "queue-item__actions";
+          actions.appendChild(btnStart);
+          actions.appendChild(btnDelete);
+
+          item.appendChild(top);
+          item.appendChild(actions);
+
+          btnStart.addEventListener("click", function () {
+            var running = status.classList.toggle("is-running");
+            status.textContent = running ? "Running" : "Pending";
+          });
+
+          btnDelete.addEventListener("click", function () {
+            item.remove();
+          });
+
+          return item;
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+          if (!DRONE_CONNECTED) {
+            applyDisconnectedUI();
+            return;
+          }
+
+          var launchBtn = document.querySelector(".launch");
+          var queueBody = document.querySelector(".queue-body");
+          if (!launchBtn || !queueBody) return;
+
+          launchBtn.addEventListener("click", function () {
+            var mission = getVal("#mission") || "Mission";
+            var destination = getVal(".map-overlay-input") || "--";
+            var serial = getVal("#serial");
+
+            taskSeq += 1;
+            var seq = pad2(taskSeq);
+            var serialShown = serial || seq;
+            var titleLine = "#" + serialShown + "-" + mission;
+
+            var card = createTaskCard({
+              title: titleLine,
+              destination: destination,
+            });
+
+            queueBody.appendChild(card);
+          });
+        });
+      })();
+    </script>
+  </body>
+</html>

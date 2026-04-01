@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://mav.github.io/lingxi-site/sitemap.xml
